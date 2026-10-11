@@ -1,0 +1,49 @@
+schema: candor-blocks/0.1
+id: dataset
+name: Example harvested-wood prices
+
+suitability_and_limitations:
+  suitability_summary: Annual stumpage prices by county, for trends.
+  application_limitations:
+    - id: one_grain
+      statement: Rows repeat the same sales at county and state grain.
+      guard: Read one region_type at a time.
+      enforcement: applied
+      enforced_by: ["py:json:dumps"]
+    - id: lower_bound
+      statement: Prices after 2019 omit some sale values, so they run low.
+      guard: Treat flagged rows as a lower bound.
+      enforcement: flagged
+      enforced_by: ["dbt:model.prices.v_prices"]
+      flag_column: is_lower_bound
+  data_quality_metrics: ["Sale counts per row."]
+  known_gaps: ["No 2022 edition."]
+
+context_and_definitions:
+  key_term_definitions:
+    sawtimber:
+      definition: Softwood trees 9.0 in. DBH and larger.
+      defined_by: USDA Forest Service FIA
+      thresholds:
+        - {field: DIA, op: ">=", value: 9.0, unit: in}
+  methodology_summary: Parsed from agency workbooks.
+  ethics_bias: ["Public sales run below private sales."]
+
+use_cases_and_target_users:
+  target_audience: ["Forest economists"]
+  recommended_expertise: Familiarity with stumpage markets.
+  suggested_uses: ["Price trends"]
+  key_instructions: ["Use price_per_ton to compare regions."]
+
+provenance_and_relationships:
+  review_method: Agency figures taken as published.
+  candid_core_curation_method: Written by the dataset's maintainer.
+  comparison_notes: Below private-market surveys.
+
+lifecycle_and_access:
+  support_status: Active.
+  curation_update_philosophy: Rebuilt each quarter.
+  changelog: ["0.1: first release."]
+  breaking_changes: ["None so far."]
+  data_access_providers: ["A public parquet export."]
+  user_feedback_channel: GitHub issues.

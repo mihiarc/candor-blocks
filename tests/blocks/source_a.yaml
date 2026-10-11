@@ -1,0 +1,24 @@
+schema: candor-blocks/0.1
+id: source_a
+name: Example source A
+
+suitability_and_limitations:
+  suitability_summary: One state's county prices.
+  application_limitations:
+    - id: lower_bound
+      statement: Source A's post-2019 rows also omit Good Neighbor sale values.
+      guard: Treat flagged rows as a lower bound.
+      enforcement: flagged
+      enforced_by: ["dbt:model.prices.v_prices"]
+      flag_column: is_lower_bound
+    - id: zones
+      statement: Counties share a few price zones.
+      guard: Count price zones, not counties.
+      enforcement: advisory
+  known_gaps: ["No 2023 edition."]
+
+context_and_definitions:
+  key_term_definitions:
+    price_zone:
+      definition: A set of counties the agency gives one price.
+      defined_by: Example state revenue agency
