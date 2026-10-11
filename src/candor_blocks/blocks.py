@@ -58,11 +58,12 @@ def resolve(blocks: Mapping[str, Block], block_id: str) -> Block:
     return Block.model_validate(merged)
 
 
-def problems(blocks: Mapping[str, Block], *, dbt_manifest: Path | None = None) -> list[str]:
+def problems(blocks: Mapping[str, Block], *, dbt_manifest: Path | None = None, root: Path = Path(".")) -> list[str]:
     """What keeps the blocks from being complete and true: fields CANDID core requires that
     the dataset block (and so every block combined with it) leaves empty, and `enforced_by`
-    targets that don't exist. `py:` targets are imported, so check them in the environment
-    that ships the code; `dbt:` targets are looked up in `dbt_manifest`."""
+    or `tested_by` targets that don't exist. `py:` targets are imported, so check them in the
+    environment that ships the code; `dbt:` targets are looked up in `dbt_manifest`; `pytest:`
+    paths are relative to `root`. Whether each test passes is the build's own test run."""
     found = []
     dataset = blocks["dataset"]
     for field in candid_core_fields():
@@ -72,14 +73,20 @@ def problems(blocks: Mapping[str, Block], *, dbt_manifest: Path | None = None) -
     nodes = set(json.loads(dbt_manifest.read_text())["nodes"]) if dbt_manifest else None
     for block_id, block in blocks.items():
         for limitation in block.suitability_and_limitations.application_limitations:
-            for target in limitation.enforced_by:
-                if why := _missing(target, nodes):
+            for target in limitation.enforced_by + limitation.tested_by:
+                if why := _missing(target, nodes, root):
                     found.append(f"{block_id}.{limitation.id}: {why}")
     return found
 
 
-def _missing(target: str, nodes: set[str] | None) -> str | None:
+def _missing(target: str, nodes: set[str] | None, root: Path) -> str | None:
     kind, _, ref = target.partition(":")
+    if kind == "pytest":
+        path, _, name = ref.partition("::")
+        source = root / path
+        if not source.is_file() or f"def {name}(" not in source.read_text():
+            return f"{target} is not a test in {root.resolve()}"
+        return None
     if kind == "dbt":
         if nodes is None:
             return f"{target} needs a dbt manifest to check"

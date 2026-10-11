@@ -15,6 +15,7 @@ suitability_and_limitations:
       guard: Count price zones, not counties.
       enforcement: applied            # applied | flagged | advisory
       enforced_by: ["dbt:model.timber_prices.v_public_prices"]
+      tested_by: ["dbt:test.timber_prices.assert_ga_dor_one_row_per_zone"]
 context_and_definitions:
   key_term_definitions:
     sawtimber:
@@ -27,13 +28,13 @@ context_and_definitions:
 
 - **Field names, categories and required fields are CANDID core's own**, checked against its published field list (`candid-core-fields.json`, vendored at commit `471193e`). Unknown fields are rejected, so a block can't drift from the standard.
 - **Types.** CANDID core describes its fields but doesn't type them. Here a limitation is `{id, statement, guard, enforcement, enforced_by, flag_column}`, and a term is `{definition, defined_by, thresholds}`.
-- **Enforcement.** A guard is `applied` when the producer's code already obeys it, `flagged` when the producer marks the affected rows in `flag_column`, or `advisory` when nothing can check it. `applied` and `flagged` guards name their code in `enforced_by` (`py:module:attribute` or `dbt:<unique_id>`), and `candor-blocks check` fails when that code doesn't exist. Consumers act on flags and need to read only the advisory guards.
+- **Enforcement.** A guard is `applied` when the producer's code already obeys it, `flagged` when the producer marks the affected rows in `flag_column`, or `advisory` when nothing can check it. `applied` and `flagged` guards name their code in `enforced_by` (`py:module:attribute` or `dbt:<unique_id>`) and, in `tested_by`, a test that fails when the guard is broken (a dbt singular test, or `pytest:<path>::<test>`). `candor-blocks check` fails when either is missing, and the build's own test run checks that each test passes. Consumers act on flags and need to read only the advisory guards.
 - **Defining authority and thresholds.** A term names the body that defines it, and where its definition is a set of thresholds, it lists them in machine-readable form.
 
 ## Use
 
 ```bash
-candor-blocks check candor/ --dbt-manifest target/manifest.json   # validate, exit 1 on problems
+candor-blocks check candor/ --dbt-manifest target/manifest.json   # validate, exit 1 on problems (--root for pytest: paths)
 candor-blocks schema                                              # JSON Schema of a block
 ```
 

@@ -10,11 +10,13 @@ suitability_and_limitations:
       guard: Read one region_type at a time.
       enforcement: applied
       enforced_by: ["py:json:dumps"]
+      tested_by: ["pytest:tests/test_candor_blocks.py::test_blocks_load_by_file_name"]
     - id: lower_bound
       statement: Prices after 2019 omit some sale values, so they run low.
       guard: Treat flagged rows as a lower bound.
       enforcement: flagged
       enforced_by: ["dbt:model.prices.v_prices"]
+      tested_by: ["dbt:test.prices.assert_lower_bound_flagged"]
       flag_column: is_lower_bound
   data_quality_metrics: ["Sale counts per row."]
   known_gaps: ["No 2022 edition."]

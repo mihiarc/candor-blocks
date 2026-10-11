@@ -18,6 +18,8 @@ CANDID_CORE_COMMIT = "471193e"
 Id = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_]+$")]
 # `py:module:attribute` names a Python object; `dbt:<unique_id>` names a node in a dbt manifest.
 Target = Annotated[str, StringConstraints(pattern=r"^(py:[\w.]+:[\w.]+|dbt:[\w.]+)$")]
+# A test that fails when the guard is broken: a dbt singular test, or `pytest:<path>::<test name>`.
+Test = Annotated[str, StringConstraints(pattern=r"^(dbt:test\.[\w.]+|pytest:[\w./-]+\.py::\w+)$")]
 
 
 class _Model(BaseModel):
@@ -33,6 +35,9 @@ class Limitation(_Model):
     - `flagged`: the producer marks every row the statement applies to with a true value in
       `flag_column`. `enforced_by` names the code that sets it.
     - `advisory`: no code can check it. A consumer has to read and follow the guard.
+
+    An `applied` or `flagged` guard also names, in `tested_by`, a test that fails when the
+    guard is broken, so the claim is checked on every build and not only asserted.
     """
 
     id: Id
@@ -40,14 +45,15 @@ class Limitation(_Model):
     guard: str
     enforcement: Literal["applied", "flagged", "advisory"]
     enforced_by: list[Target] = []
+    tested_by: list[Test] = []
     flag_column: str | None = None
 
     @model_validator(mode="after")
     def _enforcement_is_named(self) -> "Limitation":
-        if self.enforcement == "advisory" and (self.enforced_by or self.flag_column):
-            raise ValueError(f"{self.id}: an advisory guard names no enforced_by or flag_column")
-        if self.enforcement != "advisory" and not self.enforced_by:
-            raise ValueError(f"{self.id}: an {self.enforcement} guard names its enforced_by")
+        if self.enforcement == "advisory" and (self.enforced_by or self.tested_by or self.flag_column):
+            raise ValueError(f"{self.id}: an advisory guard names no enforced_by, tested_by or flag_column")
+        if self.enforcement != "advisory" and not (self.enforced_by and self.tested_by):
+            raise ValueError(f"{self.id}: an {self.enforcement} guard names its enforced_by and tested_by")
         if (self.enforcement == "flagged") != (self.flag_column is not None):
             raise ValueError(f"{self.id}: flag_column goes with, and only with, a flagged guard")
         return self

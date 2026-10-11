@@ -17,13 +17,14 @@ def main() -> None:
     check = commands.add_parser("check", help="validate a folder of blocks and their enforcement targets")
     check.add_argument("directory", type=Path)
     check.add_argument("--dbt-manifest", type=Path, help="target/manifest.json, to check dbt: targets")
+    check.add_argument("--root", type=Path, default=Path("."), help="the folder pytest: paths start from")
     commands.add_parser("schema", help="print the JSON Schema of a block")
     args = parser.parse_args()
     if args.command == "schema":
         print(json.dumps(Block.model_json_schema(by_alias=True), indent=2))
         return
     try:
-        found = problems(load_blocks(args.directory), dbt_manifest=args.dbt_manifest)
+        found = problems(load_blocks(args.directory), dbt_manifest=args.dbt_manifest, root=args.root)
     except (ValidationError, ValueError) as error:
         found = [str(error)]
     for problem in found:

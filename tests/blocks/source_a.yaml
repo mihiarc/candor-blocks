@@ -10,6 +10,7 @@ suitability_and_limitations:
       guard: Treat flagged rows as a lower bound.
       enforcement: flagged
       enforced_by: ["dbt:model.prices.v_prices"]
+      tested_by: ["dbt:test.prices.assert_lower_bound_flagged"]
       flag_column: is_lower_bound
     - id: zones
       statement: Counties share a few price zones.
