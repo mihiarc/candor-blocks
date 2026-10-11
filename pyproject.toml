@@ -1,6 +1,6 @@
 [project]
 name = "candor-blocks"
-version = "0.1.0"
+version = "0.2.0"
 description = "Honest, checkable fine print for datasets: each caveat says what to do about it and whether the data already takes care of it"
 readme = "README.md"
 authors = [

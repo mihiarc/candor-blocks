@@ -1,6 +1,7 @@
-schema: candor-blocks/0.1
+schema: candor-blocks/0.2
 id: source_a
 name: Example source A
+publisher: Example State Agency
 
 suitability_and_limitations:
   suitability_summary: One state's county prices.

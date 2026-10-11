@@ -40,7 +40,8 @@ def resolve(blocks: Mapping[str, Block], block_id: str) -> Block:
     maps combine, a limitation replaces the dataset's limitation with the same id, and text
     the block sets replaces the dataset's."""
     dataset, block = blocks["dataset"], blocks[block_id]
-    merged: dict = {"schema": SCHEMA, "id": block.id, "name": block.name}
+    merged: dict = {"schema": SCHEMA, "id": block.id, "name": block.name,
+                    "publisher": block.publisher if block.publisher is not None else dataset.publisher}
     for key in CATEGORIES:
         base, own = getattr(dataset, key), getattr(block, key)
         fields = {}

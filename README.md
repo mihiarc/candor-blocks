@@ -28,9 +28,10 @@ It was developed alongside the Data Foundation's [Semantic Commons for Climate, 
 One file per dataset, or per source within it. This one describes a state's published timber prices:
 
 ```yaml
-schema: candor-blocks/0.1
+schema: candor-blocks/0.2
 id: ga_dor
 name: Georgia DOR timber values
+publisher: Georgia Department of Revenue
 
 suitability_and_limitations:
   application_limitations:
@@ -73,9 +74,9 @@ context_and_definitions:
 Python 3.11 or later. Not on PyPI yet:
 
 ```bash
-uv add git+https://github.com/mihiarc/candor-blocks@v0.1.0
+uv add git+https://github.com/mihiarc/candor-blocks@v0.2.0
 # or
-pip install git+https://github.com/mihiarc/candor-blocks@v0.1.0
+pip install git+https://github.com/mihiarc/candor-blocks@v0.2.0
 ```
 
 **Write blocks.** Keep one folder per data product. `_dataset.yaml` holds the `dataset` block, which describes the whole product and fills every field CANDID core requires. Each narrower block (a source, a table, an estimator) is a file named for its `id`, and holds only what differs from the dataset block.
@@ -123,9 +124,9 @@ assert parse(document) == blocks
 
 `resolve` folds the dataset block into a narrower one: lists and term maps combine, a limitation replaces the dataset's limitation with the same `id`, and text the block sets replaces the dataset's.
 
-**Relation to CANDID core.** Categories, field names and required fields come from CANDID core's published field list, vendored at commit `471193e`, and unknown fields are rejected, so a block can't drift from the standard. CANDID core describes its fields without giving them types. candor-blocks types them: a limitation is `{id, statement, guard, enforcement, enforced_by, tested_by, flag_column}`, and a term is `{definition, defined_by, thresholds}`.
+**Relation to CANDID core.** Categories, field names and required fields come from CANDID core's published field list, vendored at commit `471193e`, and unknown fields are rejected, so a block can't drift from the standard. CANDID core describes its fields without giving them types. candor-blocks types them: a limitation is `{id, statement, guard, enforcement, enforced_by, tested_by, flag_column}`, and a term is `{definition, defined_by, thresholds}`. A block's `id`, `name` and `publisher` sit outside CANDID core's categories; `publisher` names the body that publishes the data, and a narrower block that leaves it out takes the dataset block's.
 
-**Versions.** The schema is `candor-blocks/0.1`. Each block names its schema version, and `parse` refuses a document written for another one.
+**Versions.** The schema is `candor-blocks/0.2`. Each block names its schema version, and `parse` refuses a document written for another one.
 
 ## License
 
