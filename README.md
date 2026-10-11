@@ -28,7 +28,7 @@ context_and_definitions:
 
 - **Field names, categories and required fields are CANDID core's own**, checked against its published field list (`candid-core-fields.json`, vendored at commit `471193e`). Unknown fields are rejected, so a block can't drift from the standard.
 - **Types.** CANDID core describes its fields but doesn't type them. Here a limitation is `{id, statement, guard, enforcement, enforced_by, flag_column}`, and a term is `{definition, defined_by, thresholds}`.
-- **Enforcement.** A guard is `applied` when the producer's code already obeys it, `flagged` when the producer marks the affected rows in `flag_column`, or `advisory` when nothing can check it. `applied` and `flagged` guards name their code in `enforced_by` (`py:module:attribute` or `dbt:<unique_id>`) and, in `tested_by`, a test that fails when the guard is broken (a dbt singular test, or `pytest:<path>::<test>`). `candor-blocks check` fails when either is missing, and the build's own test run checks that each test passes. Consumers act on flags and need to read only the advisory guards.
+- **Enforcement.** A guard is `applied` when the producer's code already obeys it, `flagged` when the producer marks the affected rows in `flag_column`, or `advisory` when nothing can check it. `applied` and `flagged` guards name their code in `enforced_by` (`py:module:attribute` or `dbt:<unique_id>`) and, in `tested_by`, a test that fails when the guard is broken (a dbt singular test, or `pytest:<path>::<test>`). `candor-blocks check` fails when either is missing, and the build's own test run checks that each test passes. Consumers act on flags and read only the guards nothing enforces in the artifact they read: an `applied` guard holds only for readers of what its `enforced_by` names.
 - **Defining authority and thresholds.** A term names the body that defines it, and where its definition is a set of thresholds, it lists them in machine-readable form.
 
 ## Use
@@ -44,6 +44,6 @@ from candor_blocks import load_blocks, resolve, flags, advisory, dump, parse
 blocks = load_blocks(Path("candor"))
 block = resolve(blocks, "ga_dor")          # with the dataset block's caveats folded in
 flags(block, row)                          # the flagged guards that apply to one row
-advisory(block)                            # the guards a consumer has to read
+advisory(block, reads="dbt:model.x.v_view")  # the guards a reader of that artifact has to read
 document = dump(blocks)                    # JSON to ship with the data; parse() reads it back
 ```

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from candor_blocks import Block, Limitation, dump, flags, load_blocks, parse, problems, resolve
+from candor_blocks import Block, Limitation, advisory, dump, flags, load_blocks, parse, problems, resolve
 from candor_blocks.schema import CATEGORIES, candid_core_fields, category_key
 
 BLOCKS = Path(__file__).parent / "blocks"
@@ -85,3 +85,10 @@ def test_flags_name_the_guards_a_row_falls_under():
 def test_a_document_round_trips():
     blocks = load_blocks(BLOCKS)
     assert parse(json.loads(json.dumps(dump(blocks)))) == blocks
+
+
+def test_guards_enforced_in_another_artifact_are_advisory_to_its_readers():
+    block = resolve(load_blocks(BLOCKS), "source_a")
+    assert [x.id for x in advisory(block)] == ["zones"]
+    assert [x.id for x in advisory(block, reads="dbt:model.prices.v_prices")] == ["one_grain", "zones"]
+    assert [x.id for x in advisory(block, reads="dbt:model.prices.v_full_export")] == ["one_grain", "lower_bound", "zones"]

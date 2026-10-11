@@ -111,9 +111,16 @@ def flags(block: Block, row: Mapping[str, object]) -> list[Flag]:
     ]
 
 
-def advisory(block: Block) -> list[Limitation]:
-    """The limitations no code enforces: the ones a consumer has to read and follow."""
-    return [x for x in block.suitability_and_limitations.application_limitations if x.enforcement == "advisory"]
+def advisory(block: Block, reads: str | None = None) -> list[Limitation]:
+    """The limitations a consumer has to read and follow. An `applied` or `flagged` guard holds
+    only in the artifact that enforces it, so pass `reads` (the `enforced_by` target of the
+    view, model or function the consumer actually reads) and every guard whose enforcement
+    lives elsewhere comes back too. Without `reads`, only `advisory` guards come back."""
+    return [
+        x
+        for x in block.suitability_and_limitations.application_limitations
+        if x.enforcement == "advisory" or (reads is not None and reads not in x.enforced_by)
+    ]
 
 
 def dump(blocks: Mapping[str, Block]) -> dict:
