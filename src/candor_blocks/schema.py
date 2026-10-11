@@ -12,7 +12,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-SCHEMA = "candor-blocks/0.1"
+SCHEMA = "candor-blocks/0.2"
 CANDID_CORE_COMMIT = "471193e"
 
 Id = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_]+$")]
@@ -135,13 +135,17 @@ CATEGORIES: dict[str, type[_Model]] = {
 
 class Block(_Model):
     """One candor block. The `dataset` block describes a whole data product; a narrower block
-    (a source, a table, an estimator) holds only what differs from it."""
+    (a source, a table, an estimator) holds only what differs from it.
+
+    `id`, `name` and `publisher` are this package's, not CANDID core fields. `publisher` names
+    the body that publishes the data the block describes, such as the agency behind a source."""
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    schema_: Literal["candor-blocks/0.1"] = Field(alias="schema")
+    schema_: Literal["candor-blocks/0.2"] = Field(alias="schema")
     id: Id
     name: str
+    publisher: str | None = None
     suitability_and_limitations: SuitabilityAndLimitations = SuitabilityAndLimitations()
     context_and_definitions: ContextAndDefinitions = ContextAndDefinitions()
     use_cases_and_target_users: UseCasesAndTargetUsers = UseCasesAndTargetUsers()

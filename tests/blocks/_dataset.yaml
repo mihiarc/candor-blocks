@@ -1,6 +1,7 @@
-schema: candor-blocks/0.1
+schema: candor-blocks/0.2
 id: dataset
 name: Example harvested-wood prices
+publisher: Example Research Group
 
 suitability_and_limitations:
   suitability_summary: Annual stumpage prices by county, for trends.

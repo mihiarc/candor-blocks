@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from candor_blocks import Block, Limitation, advisory, dump, flags, load_blocks, parse, problems, resolve
-from candor_blocks.schema import CATEGORIES, candid_core_fields, category_key
+from candor_blocks.schema import CATEGORIES, SCHEMA, candid_core_fields, category_key
 
 BLOCKS = Path(__file__).parent / "blocks"
 
@@ -18,7 +18,7 @@ def test_models_hold_exactly_candid_cores_fields():
 
 def test_a_renamed_field_is_rejected():
     with pytest.raises(ValidationError, match="ethics_and_bias"):
-        Block.model_validate({"schema": "candor-blocks/0.1", "id": "x", "name": "x",
+        Block.model_validate({"schema": "candor-blocks/0.2", "id": "x", "name": "x",
                               "context_and_definitions": {"ethics_and_bias": ["drifted"]}})
 
 
@@ -53,6 +53,18 @@ def test_a_block_takes_what_it_leaves_out_from_the_dataset_block():
     assert block.suitability_and_limitations.known_gaps == ["No 2022 edition.", "No 2023 edition."]
     assert set(block.context_and_definitions.key_term_definitions) == {"sawtimber", "price_zone"}
     assert block.lifecycle_and_access.support_status == "Active."
+
+
+def test_a_block_names_its_publisher_or_takes_the_datasets():
+    blocks = load_blocks(BLOCKS)
+    assert resolve(blocks, "source_a").publisher == "Example State Agency"
+    table = Block.model_validate({"schema": SCHEMA, "id": "table_b", "name": "Example table B"})
+    assert resolve({**blocks, "table_b": table}, "table_b").publisher == "Example Research Group"
+
+
+def test_a_block_for_another_schema_version_is_refused():
+    with pytest.raises(ValidationError, match="candor-blocks/0.2"):
+        Block.model_validate({"schema": "candor-blocks/0.1", "id": "x", "name": "x"})
 
 
 def test_complete_blocks_with_real_targets_have_no_problems(tmp_path: Path):
