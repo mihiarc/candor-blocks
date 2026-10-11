@@ -1,12 +1,13 @@
 [project]
 name = "candor-blocks"
 version = "0.1.0"
-description = "Typed CANDID core caveat blocks whose guards say what enforces them"
+description = "Honest, checkable fine print for datasets: each caveat says what to do about it and whether the data already takes care of it"
 readme = "README.md"
 authors = [
     { name = "Chris Mihiar", email = "cmihiar@ctrees.org" }
 ]
-license = "MIT"
+license = "Apache-2.0 AND MIT"
+license-files = ["LICENSE", "NOTICE", "src/candor_blocks/candid-core-fields.LICENSE"]
 keywords = ["candid", "candid-core", "data-candor", "caveats", "metadata"]
 requires-python = ">=3.11"
 dependencies = [

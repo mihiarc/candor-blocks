@@ -1,0 +1,7 @@
+candor-blocks
+Copyright 2026 Chris Mihiar
+
+This product includes CANDID core's field list (src/candor_blocks/candid-core-fields.json),
+copied unchanged from github.com/edtrochim/candid_core at commit 471193e.
+Copyright (c) 2025 Erin Trochim, licensed under the MIT license in
+src/candor_blocks/candid-core-fields.LICENSE.
