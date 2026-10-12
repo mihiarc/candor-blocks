@@ -120,13 +120,23 @@ advisory(block, reads="dbt:model.prices.v_counties")    # ga_dor's: all three
 # One JSON document to ship beside the data. parse() reads it back.
 document = dump(blocks)
 assert parse(document) == blocks
+parse(document).written_in  # 'candor-blocks/0.2', the version the document was written in
 ```
 
 `resolve` folds the dataset block into a narrower one: lists and term maps combine, a limitation replaces the dataset's limitation with the same `id`, and text the block sets replaces the dataset's.
 
 **Relation to CANDID core.** Categories, field names and required fields come from CANDID core's published field list, vendored at commit `471193e`, and unknown fields are rejected, so a block can't drift from the standard. CANDID core describes its fields without giving them types. candor-blocks types them: a limitation is `{id, statement, guard, enforcement, enforced_by, tested_by, flag_column}`, and a term is `{definition, defined_by, thresholds}`. A block's `id`, `name` and `publisher` sit outside CANDID core's categories; `publisher` names the body that publishes the data, and a narrower block that leaves it out takes the dataset block's.
 
-**Versions.** The schema is `candor-blocks/0.2`. Each block names its schema version, and `parse` refuses a document written for another one.
+## Versions
+
+The schema is `candor-blocks/0.2`, and every block names the version it was written in. Data built with older blocks stays readable without a rebuild:
+
+- `parse` and `load_blocks` read every published version (`candor_blocks.VERSIONS`) and bring older blocks up to the current one, one version at a time. The result's `written_in` names the version the blocks were written in, for a reader to report.
+- An upgrade fills in nothing the older version had no way to say. A block written in `candor-blocks/0.1`, before blocks named a publisher, comes back with `publisher` unset.
+- A document written in a newer version than the installed candor-blocks is refused, with a message to upgrade candor-blocks.
+- Producers write the current version: `dump` refuses blocks read from an older one, and `check` lists them as a problem.
+
+**Changing the schema.** Consumers follow this repository's `main` branch, and a built artifact keeps the version it was built with. So any schema change ships, in the same commit, the step that brings the previous version's blocks up to the new one (in `src/candor_blocks/versions.py`, leaving unset any field the previous version couldn't fill) and a synthetic fixture of the new version in `tests/versions/`, beside the unchanged fixtures of every older version. The tests read each fixture into the current model.
 
 ## License
 

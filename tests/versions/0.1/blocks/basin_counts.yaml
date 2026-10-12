@@ -1,0 +1,17 @@
+schema: candor-blocks/0.1
+id: basin_counts
+name: Example basin counts
+
+suitability_and_limitations:
+  application_limitations:
+    - id: moved_boundary
+      statement: One basin boundary moved partway through the record.
+      guard: Compare that basin only within one boundary.
+      enforcement: advisory
+  known_gaps: ["No counts for the smallest basin."]
+
+context_and_definitions:
+  key_term_definitions:
+    basin:
+      definition: The land draining to one outlet.
+      defined_by: Example Survey Office
