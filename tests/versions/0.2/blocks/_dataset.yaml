@@ -1,0 +1,38 @@
+schema: candor-blocks/0.2
+id: dataset
+name: Example lake survey
+publisher: Example Survey Office
+
+suitability_and_limitations:
+  suitability_summary: Yearly lake counts by district, for trends.
+  application_limitations:
+    - id: two_grains
+      statement: Rows repeat the same lakes at district and basin grain.
+      guard: Read one grain at a time.
+      enforcement: applied
+      enforced_by: ["dbt:model.lakes.v_lakes"]
+      tested_by: ["dbt:test.lakes.assert_one_grain"]
+    - id: estimated
+      statement: Some counts were estimated from aerial photos, not visited.
+      guard: Report flagged rows as estimates.
+      enforcement: flagged
+      enforced_by: ["py:lakes.build:mark_estimates"]
+      tested_by: ["pytest:tests/test_build.py::test_estimates_are_marked"]
+      flag_column: is_estimated
+    - id: skipped_year
+      statement: The survey skipped one year.
+      guard: Don't interpolate across the skipped year.
+      enforcement: advisory
+  known_gaps: ["One skipped survey year."]
+
+context_and_definitions:
+  key_term_definitions:
+    large_lake:
+      definition: A lake of 10 ha or more.
+      defined_by: Example Survey Office
+      thresholds:
+        - {field: area_ha, op: ">=", value: 10, unit: ha}
+  methodology_summary: Counted by field crews.
+
+lifecycle_and_access:
+  support_status: Active.

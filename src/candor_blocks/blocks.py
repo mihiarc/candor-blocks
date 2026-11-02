@@ -10,6 +10,7 @@ import yaml
 from pydantic import BaseModel
 
 from candor_blocks.schema import CANDID_CORE_COMMIT, CATEGORIES, SCHEMA, Block, Limitation, candid_core_fields, category_key
+from candor_blocks.versions import readable, upgrade
 
 
 class Flag(BaseModel):
@@ -19,20 +20,36 @@ class Flag(BaseModel):
     statement: str
 
 
-def load_blocks(directory: Path | Traversable) -> dict[str, Block]:
-    """Every `*.yaml` block in `directory`, keyed by id. Each file is named for its block's id,
-    and the `dataset` block lives in `_dataset.yaml`."""
-    blocks = {}
+class Blocks(dict[str, Block]):
+    """Blocks keyed by id, as read from a document or a folder. `written_in` is the schema version
+    they were written in; blocks written in an older one have been brought up to the current one."""
+
+    def __init__(self, blocks: Mapping[str, Block], written_in: str):
+        super().__init__(blocks)
+        self.written_in = written_in
+
+
+def load_blocks(directory: Path | Traversable) -> Blocks:
+    """Every `*.yaml` block in `directory`, keyed by id, written in any published schema version
+    (one for the whole folder). Each file is named for its block's id, and the `dataset` block
+    lives in `_dataset.yaml`."""
+    blocks, written_in = {}, set()
     for path in sorted(directory.iterdir(), key=lambda p: p.name):
         if not path.name.endswith(".yaml"):
             continue
-        block = Block.model_validate(yaml.safe_load(path.read_text()))
+        data = yaml.safe_load(path.read_text())
+        version = readable(data.get("schema") if isinstance(data, Mapping) else None, path.name)
+        block = Block.model_validate(upgrade(data, version))
         if block.id != path.name.removesuffix(".yaml").lstrip("_"):
             raise ValueError(f"{path.name} holds block {block.id!r}; name the file for its id")
         blocks[block.id] = block
+        written_in.add(version)
     if "dataset" not in blocks:
         raise ValueError(f"no dataset block (_dataset.yaml) in {directory}")
-    return blocks
+    if len(written_in) > 1:
+        raise ValueError(f"the blocks in {directory} are written in {', '.join(sorted(written_in))}; "
+                         "a folder moves to a new version all at once")
+    return Blocks(blocks, written_in.pop())
 
 
 def resolve(blocks: Mapping[str, Block], block_id: str) -> Block:
@@ -64,8 +81,11 @@ def problems(blocks: Mapping[str, Block], *, dbt_manifest: Path | None = None, r
     the dataset block (and so every block combined with it) leaves empty, and `enforced_by`
     or `tested_by` targets that don't exist. `py:` targets are imported, so check them in the
     environment that ships the code; `dbt:` targets are looked up in `dbt_manifest`; `pytest:`
-    paths are relative to `root`. Whether each test passes is the build's own test run."""
+    paths are relative to `root`. Whether each test passes is the build's own test run.
+    Blocks read from an older schema version are a problem too: a producer writes the current one."""
     found = []
+    if isinstance(blocks, Blocks) and blocks.written_in != SCHEMA:
+        found.append(f"the blocks are written in {blocks.written_in}; move them to {SCHEMA}")
     dataset = blocks["dataset"]
     for field in candid_core_fields():
         key = category_key(field["category"])
@@ -125,7 +145,11 @@ def advisory(block: Block, reads: str | None = None) -> list[Limitation]:
 
 
 def dump(blocks: Mapping[str, Block]) -> dict:
-    """The blocks as one JSON-ready document, the form a producer ships with its data."""
+    """The blocks as one JSON-ready document, the form a producer ships with its data. Blocks
+    read from an older schema version are refused, since the document would claim they were
+    written in the current one."""
+    if isinstance(blocks, Blocks) and blocks.written_in != SCHEMA:
+        raise ValueError(f"these blocks are written in {blocks.written_in}; move them to {SCHEMA} before shipping them")
     return {
         "schema": SCHEMA,
         "candid_core": f"github.com/edtrochim/candid_core@{CANDID_CORE_COMMIT}",
@@ -133,8 +157,9 @@ def dump(blocks: Mapping[str, Block]) -> dict:
     }
 
 
-def parse(document: Mapping) -> dict[str, Block]:
-    """Blocks from a document written by `dump`."""
-    if document.get("schema") != SCHEMA:
-        raise ValueError(f"expected schema {SCHEMA!r}, got {document.get('schema')!r}")
-    return {k: Block.model_validate(v) for k, v in document["blocks"].items()}
+def parse(document: Mapping) -> Blocks:
+    """Blocks from a document written by `dump` in any published schema version, brought up to
+    the current one. The result's `written_in` is the version the document was written in, and a
+    document written in a newer version than this candor-blocks reads raises."""
+    version = readable(document.get("schema"), "the document")
+    return Blocks({k: Block.model_validate(upgrade(v, version)) for k, v in document["blocks"].items()}, version)
